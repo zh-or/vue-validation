@@ -55,6 +55,12 @@ var validation = {
             }
         }
     },
+    /**
+     * 按分组验证
+     * @param groupName 分组名称
+     * @param opt scroll 是否滚动到第一个错误的输入框, hint 是否弹出提示
+     * @returns {boolean} 返回 true 表示验证通过, false 表示验证不通过
+     */
     test: function(groupName, opt){
         opt = opt || {};
         opt.scroll = opt.scroll || false;
@@ -141,7 +147,11 @@ var validation = {
         self.tip.el.innerText = hint.input;
         self.tip.el.style.display = 'inline-block';
         if(validation.options.delayHide > 0){
-            setTimeout(function(){
+            if(self.tip.timer){
+                clearTimeout(self.tip.timer);
+                self.tip.timer = null;
+            }
+            self.tip.timer = setTimeout(function(){
                 self.tip.el.style.display = 'none';
             }, validation.options.delayHide);
         }

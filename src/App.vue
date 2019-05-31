@@ -3,14 +3,14 @@
         <textarea  v-model="data.val0" v-validation.test="{'rule': ['min[0]', 'max[100]', 'required']}"></textarea>
         <input type="text" v-validation.test="{'rule': ['required', 'minSize[1]', 'maxSize[3]'], 'funCall': test}" v-model="data.val1"/>
         <div>
-            <label>test1 <input type="radio" name="test" v-model="data.val2" value="test1"></label> &nbsp;&nbsp;
+            <label>test1 <input type="radio" name="test" v-model="data.val2" v-validation.test.radio="{rule: ['required']}" value="test1"></label> &nbsp;&nbsp;
             <label>test2 <input type="radio" name="test" v-model="data.val2" value="test2"></label>
         </div>
 
         <div>
             <label><input type="checkbox" name="test1" v-model="data.val3" value="a">a</label>
-            <label><input type="checkbox" name="test1" v-model="data.val3" value="a">b</label>
-            <label><input type="checkbox" name="test1" v-model="data.val3" value="a">c</label>
+            <label><input type="checkbox" name="test1" v-model="data.val4" value="a">b</label>
+            <label><input type="checkbox" name="test1" v-model="data.val5" value="a">c</label>
         </div>
         <div>
             <button @click="check">validation</button>
@@ -30,6 +30,8 @@
                     val1: '',
                     val2: '',
                     val3: '',
+                    val4: '',
+                    val5: '',
                 }
             }
         },
