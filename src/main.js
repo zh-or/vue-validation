@@ -5,7 +5,7 @@ import Validation from './validation'
 Vue.config.productionTip = false;
 
 Validation.setOptions({
-    delayHide: 2000,
+    delayHide: 3000,
     hintPos: 'right',
 });
 

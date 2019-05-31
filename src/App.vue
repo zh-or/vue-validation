@@ -6,7 +6,12 @@
             <label>test1 <input type="radio" name="test" v-model="data.val2" v-validation.test.radio="{rule: ['required']}" value="test1"></label> &nbsp;&nbsp;
             <label>test2 <input type="radio" name="test" v-model="data.val2" value="test2"></label>
         </div>
-
+        <div>
+            <select v-validation.test="{'rule': ['required']}" v-model="data.select">
+                <option value="1">测试1</option>
+                <option value="2">测试2</option>
+            </select>
+        </div>
         <div>
             <label><input type="checkbox" name="test1" v-model="data.val3" value="a">a</label>
             <label><input type="checkbox" name="test1" v-model="data.val4" value="a">b</label>
@@ -26,6 +31,7 @@
         data: function(){
             return{
                 data: {
+                    select: '',
                     val0: '',
                     val1: '',
                     val2: '',

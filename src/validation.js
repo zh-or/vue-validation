@@ -226,7 +226,7 @@ var validation = {
     },
     directive: {
         bind: function (el, binding, vnode, oldVnode) {
-
+            console.log(arguments);
             validation.initChecker(
                 el,
                 validation.getGroupName(binding),
@@ -274,7 +274,7 @@ var validation = {
             }else{
                 validation.hideHint(checker);
             }
-            //console.log('componentUpdated', self)
+            //console.log('componentUpdated', el, checker)
         },
         unbind: function (el, binding, vnode, oldVnode) {
 
