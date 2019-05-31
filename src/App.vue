@@ -1,7 +1,7 @@
 <template>
     <div id="app">
         <textarea  v-model="data.val0" v-validation.test="{'rule': ['min[0]', 'max[100]', 'required']}"></textarea>
-        <input type="text" v-validation.test="{'rule': ['required'], 'funCall': test}" v-model="data.val1"/>
+        <input type="text" v-validation.test="{'rule': ['required', 'minSize[1]', 'maxSize[3]'], 'funCall': test}" v-model="data.val1"/>
         <div>
             <label>test1 <input type="radio" name="test" v-model="data.val2" value="test1"></label> &nbsp;&nbsp;
             <label>test2 <input type="radio" name="test" v-model="data.val2" value="test2"></label>
@@ -38,8 +38,8 @@
                 console.log('自定义验证函数', this, arguments);
             },
             check: function(){
-                var res = this.$validation.test('test');
-                alert(res ? '验证通过' : '验证不通过');
+                var res = this.$validation.test('test', {scroll: false, hint: true});
+                console.log('分组验证:' + res);
             }
         }
     }

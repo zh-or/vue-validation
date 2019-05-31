@@ -5,6 +5,21 @@ var validation = {
         hintPos: 'top', /*提示显示位置 top right bottom left*/
         delayHide : 3000, /*验证提示延时消失时间, 0 为不消失*/
         checkMoment: 'blur', /*blur 失去焦点时验证, update 改变时验证*/
+        defaultFunCall: {
+            /*验证通过返回true, 不通过返回false*/
+            min: function(val, num){
+                return Number(val) >= Number(num);
+            },
+            max: function(val, num){
+                return Number(val) <= Number(num);
+            },
+            minSize: function(val, size){
+                return (val || '').length >= size;
+            },
+            maxSize: function(val, size){
+                return (val || '').length <= size;
+            }
+        },
         rules: {
             'required': {
                 regex: /\S+/,
@@ -17,13 +32,13 @@ var validation = {
             'minSize': {
                 regex: '',
                 hint: {
-                    input: '最少[arg1]个字符',
+                    input: '最少 [arg1] 个字符',
                 }
             },
             'maxSize': {
                 regex: '',
                 hint: {
-                    input: '最多[arg1]个字符',
+                    input: '最多 [arg1] 个字符',
                 }
             },
             'min': {
@@ -40,37 +55,54 @@ var validation = {
             }
         }
     },
-    test: function(groupName){
-        var group = validation.groups[groupName];
+    test: function(groupName, opt){
+        opt = opt || {};
+        opt.scroll = opt.scroll || false;
+        opt.hint   = opt.hint || false;
+        var group = validation.findGroupbyName(groupName);
+        var success = true;
         if(group){
+            var firstErr;
             for(var i in group){
                 if(!validation.validation(group[i])){
-                    return false;
+                    success = false;
+                    if(opt.hint){
+
+                    }
+                    if(opt.scroll && !firstErr){
+                        firstErr = group[i];
+                    }
                 }
             }
         }
-        return true;
+        return success;
     },
-    validation: function(self){
-        console.log('validation', self);
-        for(var i = 0; i < self.rule.length; i++){
-            var r = self.rule[i];
-            if(r == 'funCall') {//处理特殊的验证
-                if(!self.funCall(self.group, self.el, self.rules)){
-                    validation.showHint(self, v.hint);
+    /*验证通过返回true, 不通过返回false*/
+    validation: function(checker, showHint){
+        if(showHint == undefined){
+            showHint = true;
+        }
+        console.log('validation', checker);
+        for(var i = 0; i < checker.rules.length; i++){
+            var ruleName = checker.rules[i];
+            var val = checker.el.value;
+            if(ruleName == 'funCall') {//处理特殊的验证
+                /* --- 用户自定义验证函数 ---*/
+                if(!checker.funCall(checker.group, checker.el, checker.rules, val)){
+                    if(showHint) validation.showHint(checker, validation.options.rules[ruleName].hint);
                     return false;
                 }
                 continue;
             }
-            var val = self.el.value;
-            var par = /\[\d+\]/.exec(r);
-            if(par){//有参数
-                r = r.replace(/\[\d+\]/, '');
-                par = par[0];
-                par = par.replace('[', '');
-                par = par.replace(']', '');
-                par = Number(par);
-                var v = validation.options.rules[r];
+
+            var par = /\[\S+\]/.exec(ruleName);
+
+            if(par){
+                /* --- 自带验证函数 ---*/
+                var funName = ruleName.replace(/\[\S+\]/, '');
+                var rules = validation.options.rules[funName];
+                var parStr = (par[0] || '').replace('[', '').replace(']', '');
+                var pars = parStr.split(',');
                 var makeHintStr = function(pars, hint){
                     var res = {};
                     for(var i in hint){
@@ -80,35 +112,25 @@ var validation = {
                     }
                     return res;
                 }
-                switch(r){
-                    case 'min':
-                        if(Number(val) < par){
-                            validation.showHint(self, makeHintStr([par], v.hint));
-                            return false;
-                        }
-                        break;
-                    case 'max':
-                        if(Number(val) > par){
-                            validation.showHint(self, makeHintStr([par], v.hint));
-                            return false;
-                        }
-                        break;
-                    case 'maxSize':
-                        if(val.length > par){
-                            validation.showHint(self, makeHintStr([par], v.hint));
-                            return false;
-                        }
-                        break;
-                }
-            }else{
-                var v = validation.options.rules[r];
-                if(v){
-                    if(!v.regex.test(val)){
-                        validation.showHint(self, v.hint);
+                var defFun = validation.options.defaultFunCall[funName];
+                if(defFun){
+                    if(!defFun.apply(validation, [val].concat(pars))){
+                        if(showHint) validation.showHint(checker, makeHintStr(pars, rules.hint));
                         return false;
                     }
                 }else{
-                    console.log('验证方式未找到 ' + r);
+                    console.log('未知的验证方法:' + funName);
+                }
+            }else{
+                /*--- 正则验证 ---*/
+                var rules = validation.options.rules[ruleName];
+                if(rules){
+                    if(!rules.regex.test(val)){
+                        if(showHint) validation.showHint(checker, rules.hint);
+                        return false;
+                    }
+                }else{
+                    console.log('验证方式未找到 ' + rules);
                 }
             }
         }
@@ -139,49 +161,73 @@ var validation = {
             }
         }
     },
-    getSelfGroup: function(el, binding, vnode, oldVnode){
+    initChecker: function(el, groupName, rules, funCall){
+        rules = rules || [];
+        var group = validation.groups[groupName];
+        if(!group){
+            group = { };
+            validation.groups[groupName] = group;
+        }
 
+        var tag = el.getAttribute('data-validation-tag');
+        if(!tag){
+            tag = el.tagName + '_' + validation.count ++;
+            el.setAttribute('data-validation-tag', tag);
+        }
+        var checker = group[tag];
+
+        if(checker){
+            /*重新初始化*/
+
+        }else{
+            checker = {
+                group: groupName,
+                el: el,
+                rules: rules,
+                funCall: funCall,
+                blurFun: function(){
+                    validation.validation(checker);
+                },
+                tip: {
+                    el: null,
+                    show: false,
+                    offsetParent: null,
+                }
+            };
+            group[tag] = checker;
+        }
+
+        return checker;
+    },
+    getGroupName(binding){
         var keys = Object.keys(binding.modifiers);
         if(keys.length > 0){
-            var groupName = keys[0];
-            var group = validation.groups[groupName];
-            if(!group){
-                group = { };
-                validation.groups[groupName] = group;
-            }
-            var f = el.getAttribute('data-validation');
-            if(!f){
-                f = el.tagName + '_' + validation.count ++;
-                el.setAttribute('data-validation', f);
-            }
-            var self = group[f];
-            if(!self){
-                self = {
-                    group: groupName,
-                    el: el,
-                    rule: binding.value.rule || [],
-                    funCall: binding.value.funCall,
-                    tip: {
-                        el: null,
-                        show: false,
-                        offsetParent: null,
-                    }
-                };
-                group[f] = self;
-            }
-            return self;
+            return keys[0];
         }
-        return undefined;
+        return '';
+    },
+    findGroupbyName: function(groupName){
+        return validation.groups[groupName];
+    },
+    findChecker: function(groupName, el){
+        var group = validation.findGroupbyName(groupName);
+        var tag = el.getAttribute('data-validation-tag');
+        return group[tag];
     },
     directive: {
         bind: function (el, binding, vnode, oldVnode) {
-            validation.getSelfGroup(el, binding, vnode, oldVnode);
+
+            validation.initChecker(
+                el,
+                validation.getGroupName(binding),
+                binding.value.rule,
+                binding.value.funCall
+            );
         },
         inserted: function (el, binding, vnode, oldVnode) {
-            var self = validation.getSelfGroup(el, binding, vnode, oldVnode);
 
-            //self.funCall(self.group, self.el, self.rules);
-
+            var checker = validation.findChecker(validation.getGroupName(binding), el);
+            /*初始化提示显示*/
             var tipEl = document.createElement('div');
             tipEl.style.display = 'none';
             tipEl.style.position = 'absolute';
@@ -190,23 +236,20 @@ var validation = {
                 tipEl.style.top = (el.offsetTop - tipEl.offsetHeight - 32) + 'px';
                 tipEl.style.left = el.offsetLeft + 'px';
             }else if(validation.options.hintPos == 'right'){
-
                 tipEl.style.top = (el.offsetTop - 4) + 'px';
                 tipEl.style.left = (el.offsetLeft + el.offsetWidth + 10) + 'px';
             }
-
-
             tipEl.classList.add('validation-hint-view');
             tipEl.innerHTML = '';
-            self.tip.el = tipEl;
-            self.tip.offsetParent = el.offsetParent;
-            self.tip.offsetParent.appendChild(self.tip.el);
+            checker.tip.el = tipEl;
+            checker.tip.offsetParent = el.offsetParent;
+            checker.tip.offsetParent.appendChild(checker.tip.el);
             if(validation.options && validation.options.checkMoment == 'blur'){
-                el.addEventListener('blur', function(e){
-                    validation.validation(self);
-                });
+                //el.removeEventListener('blur', checker.blurFun);
+                el.addEventListener('blur', checker.blurFun );
             }
-            console.log('inserted', self)
+
+            console.log('inserted', checker)
         },
         update: function (el, binding, vnode, oldVnode) {
             /*var self = validation.getSelfGroup(el, binding, vnode, oldVnode);
@@ -214,12 +257,12 @@ var validation = {
             console.log('update', binding, arguments)*/
         },
         componentUpdated: function (el, binding, vnode, oldVnode) {
-            var self = validation.getSelfGroup(el, binding, vnode, oldVnode);
+            var checker = validation.findChecker(validation.getGroupName(binding), el);
 
             if(validation.options && validation.options.checkMoment == 'update'){
-                validation.validation(self);
+                validation.validation(checker);
             }else{
-                validation.hideHint(self);
+                validation.hideHint(checker);
             }
             //console.log('componentUpdated', self)
         },
@@ -229,10 +272,10 @@ var validation = {
             if(Array.isArray(keys) && keys.length > 0){
 
                 var groupName = keys[0];
-                var self = validation.groups[groupName];
+                var checker = validation.groups[groupName];
                 delete validation.groups[groupName];
-                self.tip.offsetParent.removeChild(self.tip.offsetParent);
-                console.log('removed', self);
+                checker.tip.offsetParent.removeChild(checker.tip.offsetParent);
+                console.log('removed', checker);
             }
         },
     }
