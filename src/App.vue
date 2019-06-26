@@ -3,8 +3,8 @@
         <textarea  v-model="data.val0" v-validation.test="{'rule': ['min[0]', 'max[100]', 'required']}"></textarea>
         <input type="text" v-validation.test="{'rule': ['required', 'minSize[1]', 'maxSize[3]'], 'funCall': test}" v-model="data.val1"/>
         <div>
-            <label>test1 <input type="radio" name="test" v-model="data.val2" v-validation.test.radio="{rule: ['required']}" value="test1"></label> &nbsp;&nbsp;
-            <label>test2 <input type="radio" name="test" v-model="data.val2" value="test2"></label>
+            <label>test1 <input type="radio" name="test" v-model="data.val2" value="test1" v-validation.test.radio></label> &nbsp;&nbsp;
+            <label>test2 <input type="radio" name="test" v-model="data.val2" value="test2" v-validation.test.radio="{rule: ['required']}"></label>
         </div>
         <div>
             <select v-validation.test="{'rule': ['required']}" v-model="data.select">
@@ -13,9 +13,10 @@
             </select>
         </div>
         <div>
-            <label><input type="checkbox" name="test1" v-model="data.val3" value="a">a</label>
-            <label><input type="checkbox" name="test1" v-model="data.val4" value="a">b</label>
-            <label><input type="checkbox" name="test1" v-model="data.val5" value="a">c</label>
+            <label><input type="checkbox" name="test1" v-model="data.val3" value="a" v-validation.test.cbox>a</label>
+            <label><input type="checkbox" name="test1" v-model="data.val4" value="b" v-validation.test.cbox>b</label>
+            <label><input type="checkbox" name="test1" v-model="data.val5" value="c" v-validation.test.cbox>c</label>
+            <label><input type="checkbox" name="test1" v-model="data.val6" value="d" v-validation.test.cbox="{rule: ['required', 'minSize[2]', 'maxSize[3]']}">d</label>
         </div>
         <div>
             <button @click="check">validation</button>
@@ -38,6 +39,7 @@
                     val3: '',
                     val4: '',
                     val5: '',
+                    val6: '',
                 }
             }
         },
